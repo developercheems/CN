@@ -1,64 +1,80 @@
-#include<iostream>
-
+#include <iostream>
+#include <math.h>
+#include <cstring>
 using namespace std;
 
-string xorfun( string encoded, string crc) {						//Bitwise XOR operation
-	int crclen = crc.length();
-
-	for ( int i = 0 ; i <= (encoded.length() - crclen) ; ) {
-		for( int j=0 ; j < crclen ; j++) {
-			encoded[i+j] = encoded[i+j] == crc[j] ? '0' : '1' ;
-		}
-		for( ; i< encoded.length() && encoded[i] != '1' ; i++) ;
-
-	}
-
-	return encoded;
+char exor(char a,char b)                                     
+{
+	if(a==b)
+		return '0';
+	else
+		return '1';
 }
 
-int main() {
-	string data, crc, encoded = "";
-	cout << "SENDER SIDE" << endl;
-	cout << "Enter the data: " << endl;
+void crc(char data[], char key[])
+{
+	int datalen = strlen(data);
+	int keylen = strlen(key);
+
+	for(int i=0;i<keylen-1;i++)               
+		data[datalen+i]='0';
+		data[datalen+keylen-1]='\0';//adding keylen-1 zero to datalen
+
+		int codelen = datalen+keylen-1;                
+
+	char temp[20],rem[20];
+
+	for(int i=0;i<keylen;i++)
+		rem[i]=data[i];                    
+
+	for(int j=keylen;j<=codelen;j++)
+	{
+    	for(int i=0;i<keylen;i++)
+    		temp[i]=rem[i];               
+		
+    	if(rem[0]=='0')                
+    	{
+        	for(int i=0;i<keylen-1;i++)
+            	rem[i]=temp[i+1];
+    	}
+    	else                    
+    	{    
+        	for(int i=0;i<keylen-1;i++)
+            	rem[i]=exor(temp[i+1],key[i+1]);
+            
+    	}
+    	
+    	if(j!=codelen)
+        	rem[keylen-1]=data[j];        
+    	else
+        	rem[keylen-1]='\0';
+	}
+    
+	for(int i=0;i<keylen-1;i++)
+		data[datalen+i]=rem[i];                
+		data[codelen]='\0';
+	cout<<"CRC="<<rem<<"\nDataword="<<data;
+
+}
+
+int main()
+{
+	char key[20],data[20];
+
+	cout<<"Enter the data:";
 	cin>>data;
+	cout<<"Enter the key:";
+	cin>>key;
+	
+	crc(data,key);                        
 
-	cout<<"Enter the generator: "<<endl;
-	cin>>crc;
-
-	encoded += data;
-
-	int datalen = data.length();
-	int crclen = crc.length();
-
-	for(int i=1 ; i <= (crclen - 1) ; i++)
-		encoded += '0';
-
-	encoded = xorfun(encoded, crc);
-
-	cout<<"The checkbits generated are: ";
-	cout<<encoded.substr(encoded.length() - crclen + 1)<<endl<<endl;
-	cout<<"The message to be transmitted is: ";
-	cout<<data + encoded.substr(encoded.length() - crclen + 1);
-
-
-
-
-	cout<<endl<<"RECEIVER SIDE"<<endl;
-
-
-
-	cout<<"Enter the message received: "<<endl;
-	string msg;
-	cin>>msg;
-
-	msg = xorfun( msg, crc);												//bitwise xor is performed between received bits and the generator crc bits
-
-	for( char i : msg.substr(msg.length() - crclen + 1))					//after performing xor , if the last few bits are zero then there's no error in transmission
-		if( i != '0' ) {
-			cout<<"Error in communication."<<endl;						//if bits not zero ; ERROR IN TRANSMISSION
-			return 0;
-		}
-
-	cout<<"No Error in transmission!"<<endl;
 	return 0;
 }
+
+/*
+Enter the data:101101  - input
+Enter the key:010
+CRC=00
+Dataword=10110100
+--------------------------------
+*/
